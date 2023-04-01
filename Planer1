@@ -1,0 +1,99 @@
+//
+//  ContentView.swift
+//  Planer
+//
+//  Created by Влад Коняев on 01.04.2023.
+//
+
+import SwiftUI
+
+import Combine
+
+struct Task: Identifiable {
+    let id = UUID()
+    var title: String
+    var description: String
+    var createdDate: Date
+    var category: String
+    var isCompleted: Bool = false
+}
+
+struct ContentView: View {
+    @State private var showNewTaskSheet = false
+    @State private var newTaskTitle = ""
+    @State var tasks = [
+        Task(title: "Задача 1", description: "Описание задачи 1", createdDate: Date(), category: "Работа"),
+        Task(title: "Задача 2", description: "Описание задачи 2", createdDate: Date(), category: "Семья"),
+        Task(title: "Задача 3", description: "Описание задачи 3", createdDate: Date(), category: "Прочие")
+    ]
+    
+    let categories = ["Работа", "Семья", "Прочие"]
+    
+    var body: some View {
+        NavigationView {
+            List {
+                ForEach(categories, id: \.self) { category in
+                    Section(header: Text(category)) {
+                        ForEach(tasks.filter { $0.category == category }) { task in
+                            Text(task.title)
+                                .strikethrough(task.isCompleted)
+                                .foregroundColor(task.isCompleted ? .gray : .primary)
+                                .onTapGesture {
+                                    if let index = tasks.firstIndex(where: { $0.id == task.id }) {
+                                        tasks[index].isCompleted.toggle()
+                                    }
+                                }
+                        }
+                    }
+                }
+            }
+            .listStyle(GroupedListStyle())
+            .navigationTitle("Планировщик")
+            .navigationBarItems(trailing:
+                Button(action: {
+                    let newTask = Task(title: "Новая задача", description: "", createdDate: Date(), category: "Работа")
+                    tasks.append(newTask)
+                }, label: {
+                    Image(systemName: "plus")
+                })
+            )
+            .sheet(isPresented: $showNewTaskSheet) {
+                NavigationView {
+                    var presentationMode: Binding<PresentationMode>
+                    Form {
+                        Section(header: Text("Заголовок задачи")) {
+                            TextField("Название", text: $newTaskTitle)
+                        }
+                        Section(header: Text("Описание задачи")) {
+                            TextEditor(text: $newTaskDescription)
+                        }
+                        Section(header: Text("Категория")) {
+                            Picker(selection: $newTaskCategory, label: Text("Категория")) {
+                                ForEach(categories, id: \.self) {
+                                    Text($0)
+                                }
+                            }
+                            .pickerStyle(MenuPickerStyle())
+                        }
+                    }
+                    .navigationTitle("Новая задача")
+                    .navigationBarItems(
+                        leading: Button("Отмена") {
+                            presentationMode.wrappedValue.dismiss()
+                        },
+                        trailing: Button("Сохранить") {
+                            let newTask = Task(title: newTaskTitle, description: newTaskDescription, createdDate: Date(), category: newTaskCategory)
+                            tasks.append(newTask)
+                            presentationMode.wrappedValue.dismiss()
+                        }
+                        .disabled(newTaskTitle.isEmpty)
+                    )
+                }
+            }
+            .environment(\.presentationMode, self.presentationMode)
+
+    }
+}
+
+
+
